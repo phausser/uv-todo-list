@@ -1,8 +1,12 @@
 import click
 import json
 import os
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
 TODO_FILE = "todos.json"
+console = Console()
 
 def load_todos():
     if os.path.exists(TODO_FILE):
@@ -25,18 +29,23 @@ def add(task):
     todos = load_todos()
     todos.append({"task": task, "done": False})
     save_todos(todos)
-    click.echo(f"Added task: {task}")
+    console.print(f"[green]Added task:[/green] {task}")
 
 @cli.command()
 def list():
     """List all tasks."""
     todos = load_todos()
     if not todos:
-        click.echo("No tasks found.")
+        console.print("[yellow]No tasks found.[/yellow]")
         return
+    table = Table(title="ToDo List", box=box.ROUNDED, show_lines=True)
+    table.add_column("Nr.", style="cyan", justify="right")
+    table.add_column("Status", style="magenta")
+    table.add_column("Task", style="white")
     for i, todo in enumerate(todos, 1):
-        status = "✓" if todo["done"] else " "
-        click.echo(f"{i}. [{status}] {todo['task']}")
+        status = "[green]✓[/green]" if todo["done"] else "[red]✗[/red]"
+        table.add_row(str(i), status, todo["task"])
+    console.print(table)
 
 @cli.command()
 @click.argument("index", type=int)
@@ -46,9 +55,9 @@ def complete(index):
     if 1 <= index <= len(todos):
         todos[index - 1]["done"] = True
         save_todos(todos)
-        click.echo(f"Marked task {index} as complete.")
+        console.print(f"[bold green]Task {index} marked as done.[/bold green]")
     else:
-        click.echo("Invalid task index.")
+        console.print("[red]Invalid task index.[/red]")
 
 @cli.command()
 @click.argument("index", type=int)
@@ -58,9 +67,9 @@ def delete(index):
     if 1 <= index <= len(todos):
         task = todos.pop(index - 1)
         save_todos(todos)
-        click.echo(f"Deleted task: {task['task']}")
+        console.print(f"[bold red]Deleted task:[/bold red] {task['task']}")
     else:
-        click.echo("Invalid task index.")
+        console.print("[red]Invalid task index.[/red]")
 
 if __name__ == "__main__":
-   cli()
+    cli()
